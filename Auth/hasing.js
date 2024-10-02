@@ -1,24 +1,24 @@
-const bcrypt = require('bcrypt')
+// const bcrypt = require('bcrypt')
 
-function hash(password) {
-    return bcrypt.hashSync(password, 10, (err, Hash) => {
-        if (err) {
-            console.log(err);
-        } else {
-            return Hash
-        }
-    })
+// function hash(password) {
+//     return bcrypt.hashSync(password, 10, (err, Hash) => {
+//         if (err) {
+//             console.log(err);
+//         } else {
+//             return Hash
+//         }
+//     })
 
-}
+// }
 
-function verifyPassword(freshPassword, Hash) {
-    return bcrypt.compareSync(freshPassword, Hash, (err, res) => {
-        if (err) {
-            console.log('Something Went wrong');
-        } else {
-            return res;
-        }
-    })
-}
+// function verifyPassword(freshPassword, Hash) {
+//     return bcrypt.compareSync(freshPassword, Hash, (err, res) => {
+//         if (err) {
+//             console.log('Something Went wrong');
+//         } else {
+//             return res;
+//         }
+//     })
+// }
 
-module.exports = { hash, verifyPassword };
+// module.exports = { hash, verifyPassword };

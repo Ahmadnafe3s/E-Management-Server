@@ -1,23 +1,36 @@
-const express = require('express')
+import express from 'express'
+import cors from 'cors'
+import empRoutes from './routes/employeesRoutes.js'
+import userRoutes from './Auth/userAuthentication.js'
+import F_passwordRoutes from './Auth/forgetPassword.js'
+import jwt from 'jsonwebtoken'
+import { configDotenv } from 'dotenv'
+
+
+// Calling functuons
+
+configDotenv();
+
+
 const app = express()
-const cors = require('cors')
-const bodyparser = require('body-parser')
-const handleError = require('./handleError')
-const verifyToken = require('./Auth/verifyToken')
 
-
-const tokenMiddleWare = (req, res, next) => {
-    const token = req.headers.token
+const tokenMiddleWare = async (req, res, next) => {
 
     try {
-        if (req.path === '/Register' || req.path === '/logIn' || req.path === '/checkUser' || req.path === '/validateEmail' || req.path === '/verifyOtp' || req.path === '/updatePassword') {
-            next()
-        } else {
-            verifyToken(token, next)
-        }
+
+        const { token } = req.headers
+        const isPublicPath = req.path === '/Register' || req.path === '/logIn' || req.path === '/checkUser' || req.path === '/validateEmail' || req.path === '/verifyOtp' || req.path === '/updatePassword'
+
+        if (isPublicPath) return next()
+
+        await jwt.verify(token, process.env.JWT_SECRET)
+        
+        next()
 
     } catch (error) {
-        handleError(401, 'Token : ' + error.message, res)
+
+        res.status(401).json({ message: error.message })
+
     }
 
 }
@@ -25,16 +38,16 @@ const tokenMiddleWare = (req, res, next) => {
 
 
 app.use(cors())
+app.use(express.json())
+// app.use(express.urlencoded({ extended: true }))
 
-app.use(bodyparser.json())
+// app.use(tokenMiddleWare)
 
-app.use(tokenMiddleWare)
+app.use('/', empRoutes)
 
-app.use('/', require('./routes/APIs'))
+app.use('/', userRoutes)
 
-app.use('/', require('./Auth/userAuthentication'))
-
-app.use('/', require('./Auth/forgetPassword'))
+app.use('/', F_passwordRoutes)
 
 
 

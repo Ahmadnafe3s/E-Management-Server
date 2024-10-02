@@ -1,112 +1,119 @@
-const express = require('express')
+import express from 'express'
+import speakeasy from 'speakeasy'
+import Connect from '../Database/dbConfig/connect.js'
+import users from '../Database/model/userModel.js'
+import sendMail from '../helper/nodemailer.js'
+import bcrypt from 'bcryptjs'
+
+
 const router = express.Router()
-const nodemailer = require('nodemailer');
-const db = require('../Database/mongoDB')
-const handleError = require('../handleError')
-const path = require('path')
-const fs = require('fs');
-const mustache = require('mustache');
-const speakeasy = require('speakeasy');
-const Hashing = require('./hasing')
-require('dotenv').config()
-
-const htmlfilePath = path.join(__dirname, './OTP.html')
-const secret = speakeasy.generateSecret({ length: 10 });
 
 
-let mailTransporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL,
-        pass: process.env.PASSWORD
-    }
-});
+router.post('/verifyEmail', async (req, res) => {
+
+    try {
+
+        const { Email } = await req.body
+
+        await Connect();
+
+        const USER = await users.findOne({ Email})
+
+        if (!USER) {
+            return res.status(404).json({
+                message: 'User not found',
+            })
+        }
 
 
-router.post('/validateEmail', async (req, res) => {
+        const secret = await speakeasy.generateSecret({ length: 10 });
 
-    const email = req.body.Email
-    const user = await db.Users.findOne({ Email: email })
-
-    const otp = speakeasy.totp({
-        secret: secret.base32,
-        encoding: 'base32',
-        step: 300
-    });
-
-
-    if (user) {
-        let data = {
-            OTP: otp,
-            Name : user.Name
-        };
-
-        const readFile = fs.readFileSync(htmlfilePath, "utf-8")
-        const renderedHtml = mustache.render(readFile, data);
-
-        let mailDetails = {
-            from: process.env.EMAIL,
-            to: email,
-            subject: 'Forget Password',
-            html: renderedHtml,
-        };
-
-
-        mailTransporter.sendMail(mailDetails, function (err, data) {
-            if (err) {
-                handleError(404, 'An error encounterd!', res)
-            } else {
-                res.send({
-                    secretKey: secret.base32,
-                    message: 'OTP sent successfully',
-                    email: email // req.body.Email
-                })
-            }
+        const otp = await speakeasy.totp({
+            secret: secret.base32,
+            encoding: 'base32',
+            step: 300
         });
 
+
+        await sendMail(Email, { OTP: otp, Name: USER.Name }, "Forget Password")
+
+        res.send({
+            secretKey: secret.base32,
+            message: 'OTP sent successfully',
+            Email
+        })
+
+    } catch (error) {
+        return res.status(500).json({
+            message: error.message,
+        })
     }
 
-    else {
-        handleError(404, 'User not found!', res)
-    }
 })
 
 
-router.post('/verifyOtp', (req, res) => {
 
-    let { Otp, secretKey } = req.body
+router.post('/verifyOtp', async (req, res) => {
 
-    const verificationResult = speakeasy.totp.verify({
-        secret: secretKey,
-        encoding: 'base32',
-        token: +Otp,
-        window: 2,
-        step: 300
-    });
+    try {
 
-    if (verificationResult) {
-        res.send({
-            message: 'OTP verified'
+        const { Otp, secretKey } = await req.body
+
+        await Connect();
+
+        const isOtpVerified = speakeasy.totp.verify({
+            secret: secretKey,
+            encoding: 'base32',
+            token: +Otp,
+            window: 2,
+            step: 300
+        });
+
+
+        if (!isOtpVerified) {
+            return res.status(400).json({
+                message: 'invalid Otp!'
+            })
+        }
+
+
+    } catch (error) {
+
+        return res.status(500).json({
+            message: 'Something went wrong',
         })
-    } else {
-        handleError(404, 'Invalid OTP!', res)
+
     }
+
 })
 
 
 
 router.post('/updatePassword', async (req, res) => {
-    let { email, newPassword } = req.body
 
     try {
-        await db.Users.updateOne({ Email: email }, { $set: { Password: Hashing.hash(newPassword) } })
+
+        const { Email, Password } = req.body
+
+        await Connect();
+
+        const salt = await bcrypt.genSalt(10)
+
+        const hashedPassword = await bcrypt.hash(Password, salt)
+
+        await users.updateOne({ Email: email }, { $set: { Password: hashedPassword } })
+
+
         res.send({
             message: 'Password Updated!'
         })
+
     } catch (error) {
-        handleError(500, 'Something went wrong!', res)
+        res.status(500).json({
+            message: 'Something went wrong',
+        })
     }
 })
 
 
-module.exports = router;
+export default router
