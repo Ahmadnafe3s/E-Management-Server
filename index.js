@@ -14,17 +14,20 @@ configDotenv();
 
 const app = express()
 
+
+
 const tokenMiddleWare = async (req, res, next) => {
 
     try {
 
         const { token } = req.headers
-        const isPublicPath = req.path === '/Register' || req.path === '/logIn' || req.path === '/checkUser' || req.path === '/validateEmail' || req.path === '/verifyOtp' || req.path === '/updatePassword'
 
-        if (isPublicPath) return next()
+        const isPublicPath = new Set(['/Register', '/logIn', '/checkUser', '/validateEmail', '/verifyOtp', '/updatePassword'])
+
+        if (isPublicPath.has(req.path)) return next()
 
         await jwt.verify(token, process.env.JWT_SECRET)
-        
+
         next()
 
     } catch (error) {
@@ -37,11 +40,11 @@ const tokenMiddleWare = async (req, res, next) => {
 
 
 
-app.use(cors())
-app.use(express.json())
-// app.use(express.urlencoded({ extended: true }))
+app.use(cors()) // (CORS) is a protocol that allows web applications to access resources from other domains
 
-// app.use(tokenMiddleWare)
+app.use(express.json()) // will parse all request into json
+
+app.use(tokenMiddleWare)
 
 app.use('/', empRoutes)
 

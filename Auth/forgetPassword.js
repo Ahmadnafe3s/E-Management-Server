@@ -17,7 +17,7 @@ router.post('/verifyEmail', async (req, res) => {
 
         await Connect();
 
-        const USER = await users.findOne({ Email})
+        const USER = await users.findOne({ Email })
 
         if (!USER) {
             return res.status(404).json({
@@ -76,6 +76,9 @@ router.post('/verifyOtp', async (req, res) => {
             })
         }
 
+        return res.send({
+            message: 'otp verified'
+        })
 
     } catch (error) {
 
@@ -93,7 +96,7 @@ router.post('/updatePassword', async (req, res) => {
 
     try {
 
-        const { Email, Password } = req.body
+        const { Email, Password } = await req.body
 
         await Connect();
 
@@ -101,7 +104,7 @@ router.post('/updatePassword', async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(Password, salt)
 
-        await users.updateOne({ Email: email }, { $set: { Password: hashedPassword } })
+        await users.updateOne({ Email }, { $set: { Password: hashedPassword } })
 
 
         res.send({

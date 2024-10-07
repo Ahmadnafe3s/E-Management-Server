@@ -25,7 +25,7 @@ router.post('/checkUser', async (req, res) => {
         }
 
         return res.send({
-            message: "Email is available",
+            message: "User is available",
         })
 
     } catch (error) {
@@ -74,7 +74,7 @@ router.post('/signUp', async (req, res) => {
 
 
 
-router.post('/signIn', async (req, res) => {
+router.post('/logIn', async (req, res) => {
 
     try {
 

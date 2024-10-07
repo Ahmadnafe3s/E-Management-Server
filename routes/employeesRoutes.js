@@ -1,6 +1,6 @@
 import express from 'express'
 import employees from '../Database/model/empModel.js'
-import States from '../Database/model/statesModel.js'
+import states from '../Database/model/statesModel.js'
 import districts from '../Database/model/districtModel.js'
 import Connect from '../Database/dbConfig/connect.js'
 
@@ -8,14 +8,27 @@ const router = express.Router()
 
 
 
-router.post('/post', async (req, res) => {
+router.post('/postEmployee', async (req, res) => {
 
     try {
-        await db.employees.create(req.body)
-        res.send({
-            message: "Data Saved successfully"
+
+        await Connect();
+
+        const employeeData = req.body
+
+        const Employee = new employees(employeeData) // modelling
+
+        await Employee.save() // storing data
+
+       return res.send({
+            message: "Data Stored successfully"
         })
+
     } catch (err) {
+
+        return res.status(500).json({
+            message: err.message
+        })
 
     }
 
@@ -23,6 +36,7 @@ router.post('/post', async (req, res) => {
 
 
 router.get('/employeesList', async (req, res) => {
+
     try {
 
         await Connect();
@@ -34,7 +48,7 @@ router.get('/employeesList', async (req, res) => {
         })
 
     } catch (error) {
-        return res.status().json({
+        return res.status(500).json({
             message: error.message
         })
     }
@@ -57,7 +71,7 @@ router.get('/Details/:UID', async (req, res) => {
 
     } catch (error) {
 
-        return res.status().json({
+        return res.status(500).json({
             message: error.message
         })
 
@@ -67,7 +81,7 @@ router.get('/Details/:UID', async (req, res) => {
 
 
 
-router.put('/Update', async (req, res) => {
+router.put('/updateEmployee', async (req, res) => {
 
     try {
 
@@ -88,7 +102,7 @@ router.put('/Update', async (req, res) => {
 
     } catch (error) {
 
-        return res.status().json({
+        return res.status(500).json({
             message: error.message
         })
 
@@ -97,15 +111,15 @@ router.put('/Update', async (req, res) => {
 })
 
 
-router.delete('/Delete/:UID', async (req, res) => {
+router.delete('/deleteEmployee/:UID', async (req, res) => {
 
     try {
 
         await Connect();
 
-        const { UID } = +req.params
+        const { UID } = await req.params
 
-        await db.employees.deleteOne({ UID })
+        await employees.deleteOne({ UID })
 
         return res.send({
             message: "Employee Deleted Successfully"
@@ -113,7 +127,7 @@ router.delete('/Delete/:UID', async (req, res) => {
 
     } catch (error) {
 
-        return res.status().json({
+        return res.status(500).json({
             message: error.message
         })
 
@@ -127,17 +141,15 @@ router.get('/States', async (req, res) => {
 
         await Connect();
 
-        const states =  await States.find({}, { _id: 0 })
+        const States =  await states.find({}, { _id: 0 })
 
         return res.send({
-
-            states
-
+            States
         })
 
     } catch (error) {
 
-        return res.status().json({
+        return res.status(500).json({
             message: error.message
         })
 
@@ -153,15 +165,15 @@ router.get('/District/:stateId', async (req, res) => {
 
         const State_Id = +req.params.stateId
         
-        const distrcits = await districts.find({ State_Id }, { _id: 0 })
+        const Districts = await districts.find({ State_Id }, { _id: 0 })
 
         return res.send({
-            distrcits
+            Districts
         })
 
     } catch (error) {
 
-        return res.status().json({
+        return res.status(500).json({
             message: error.message
         })
 
